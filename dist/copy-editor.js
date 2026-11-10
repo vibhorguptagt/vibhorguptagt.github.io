@@ -137,8 +137,7 @@
     const trigger = document.createElement('button');
     trigger.className = 'copy-editor-trigger';
     trigger.setAttribute('aria-label', 'Edit text');
-    trigger.title = 'Edit text';
-    trigger.innerHTML = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 4.2-1 11.5-11.5a2 2 0 0 0-2.8-2.8L5.4 16.2 4 20Z"/><path d="m15.5 6.1 2.8 2.8"/></svg>';
+    trigger.setAttribute('aria-keyshortcuts', 'Alt+Shift+E');
     trigger.type = 'button';
     const dialog = document.createElement('dialog');
     dialog.className = 'copy-editor';
@@ -162,7 +161,7 @@
         <input type="file" accept=".json,application/json" id="copy-file" hidden>
       </div>
       <p role="status" id="copy-status"></p>`;
-    document.body.append(trigger, dialog);
+    document.body.append(dialog);
 
     const $ = (selector) => dialog.querySelector(selector);
     const search = $('#copy-search');
@@ -279,6 +278,13 @@
       listFields();
       dialog.showModal();
     });
+    document.addEventListener('keydown', (event) => {
+      if (event.code !== 'KeyE' || !event.altKey || !event.shiftKey || event.ctrlKey ||
+          event.metaKey || event.repeat || document.querySelector('dialog[open]') ||
+          event.target.closest('input, textarea, select, [contenteditable]')) return;
+      event.preventDefault();
+      trigger.click();
+    });
     search.addEventListener('input', () => listFields());
     select.addEventListener('change', loadSelection);
     save.addEventListener('click', () => {
@@ -328,7 +334,9 @@
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        if (!trigger.isConnected) document.body.append(trigger, dialog);
+        const greenDot = document.querySelector('main .crt-flicker > div:first-child > span:nth-child(3)');
+        if (greenDot && trigger.parentElement !== greenDot) greenDot.append(trigger);
+        if (!dialog.isConnected) document.body.append(dialog);
         applyEdits();
       });
     }

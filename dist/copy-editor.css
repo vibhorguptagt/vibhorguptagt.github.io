@@ -1,4 +1,3 @@
-.copy-editor-trigger,
 .copy-editor button {
   background: #21162f;
   border: 1px solid #65408d;
@@ -8,14 +7,6 @@
   font: inherit;
   padding: .45rem .8rem;
 }
-.copy-editor-trigger {
-  position: fixed;
-  bottom: max(.85rem, env(safe-area-inset-bottom));
-  right: max(.85rem, env(safe-area-inset-right));
-  font-size: .85rem;
-  z-index: 80;
-}
-.copy-editor-trigger:hover,
 .copy-editor button:hover { background: #38214f; }
 .copy-editor :focus-visible,
 .copy-editor-trigger:focus-visible { outline: 2px solid #bc85ff; outline-offset: 2px; }
@@ -57,12 +48,17 @@
 .copy-editor #copy-save:hover { background: #c99bf9; }
 .copy-editor [role="status"] { min-height: 1.3em; }
 
+main .crt-flicker > div:first-child > span:nth-child(3) {
+  position: relative;
+}
+
 .copy-editor-trigger {
-  display: grid;
-  place-items: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  padding: 0;
+  position: absolute;
+  inset: -7px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
 }
 
 .copy-passcode {
