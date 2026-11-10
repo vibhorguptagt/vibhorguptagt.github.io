@@ -27,10 +27,118 @@
     }));
   }
 
+  // CodeSlots-style input for the browser-local copy editor.
+  function mountPasscode(trigger, unlock) {
+    const expected = 'ae3974b97a03a46ce1d20e29c77220f9aa0c3690d38890a91fb799e6f6d3cd2b';
+    const dialog = document.createElement('dialog');
+    dialog.className = 'copy-editor copy-passcode';
+    dialog.setAttribute('aria-labelledby', 'copy-passcode-title');
+    dialog.innerHTML = `
+      <form autocomplete="off">
+        <div class="copy-editor-heading">
+          <h2 id="copy-passcode-title">Unlock editor</h2>
+          <button type="button" data-cancel>Cancel</button>
+        </div>
+        <p>Enter the 8-digit passcode.</p>
+        <div class="copy-code-row">
+          <div class="copy-code-slots" aria-hidden="true"></div>
+          <input aria-label="Editor passcode" type="password" inputmode="numeric"
+                 autocomplete="off" maxlength="8" autofocus>
+        </div>
+        <p class="copy-code-status" role="status"></p>
+      </form>`;
+    const form = dialog.querySelector('form');
+    const input = dialog.querySelector('input');
+    const status = dialog.querySelector('[role="status"]');
+    const row = dialog.querySelector('.copy-code-slots');
+    const slots = Array.from({ length: 8 }, (_, index) => {
+      const slot = document.createElement('span');
+      slot.style.setProperty('--slot-index', index);
+      row.append(slot);
+      return slot;
+    });
+    let attempt = 0;
+    let busy = false;
+    let timer;
+
+    function draw() {
+      slots.forEach((slot, index) => {
+        slot.toggleAttribute('data-filled', index < input.value.length);
+        slot.toggleAttribute('data-current', index === input.value.length);
+      });
+    }
+
+    function reset() {
+      clearTimeout(timer);
+      attempt += 1;
+      busy = false;
+      input.value = '';
+      input.readOnly = false;
+      dialog.dataset.state = 'idle';
+      status.textContent = '';
+      draw();
+    }
+
+    async function verify() {
+      if (input.value.length !== slots.length || busy) return;
+      busy = true;
+      input.readOnly = true;
+      const current = ++attempt;
+      let match;
+      try {
+        const bytes = new TextEncoder().encode(input.value);
+        const digest = await crypto.subtle.digest('SHA-256', bytes);
+        match = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('') === expected;
+      } catch {
+        if (current === attempt) {
+          reset();
+          status.textContent = 'Passcode verification requires HTTPS or localhost.';
+        }
+        return;
+      }
+      if (current !== attempt || !dialog.open) return;
+      dialog.dataset.state = match ? 'success' : 'error';
+      status.textContent = match ? '✓ Unlocked' : 'Incorrect passcode. Try again.';
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      timer = setTimeout(() => {
+        if (match) {
+          dialog.close();
+          unlock();
+        } else {
+          const message = status.textContent;
+          reset();
+          status.textContent = message;
+          input.focus();
+        }
+      }, reduced ? 0 : 340);
+    }
+
+    input.addEventListener('input', () => {
+      input.value = input.value.replace(/\D/g, '').slice(0, slots.length);
+      status.textContent = '';
+      draw();
+      verify();
+    });
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      verify();
+    });
+    dialog.querySelector('[data-cancel]').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', reset);
+    trigger.addEventListener('click', () => {
+      reset();
+      document.body.append(dialog);
+      dialog.showModal();
+      input.focus();
+    });
+  }
+
   function mountEditor() {
     const trigger = document.createElement('button');
     trigger.className = 'copy-editor-trigger';
-    trigger.textContent = 'Edit text';
+    trigger.setAttribute('aria-label', 'Edit text');
+    trigger.title = 'Edit text';
+    trigger.innerHTML = '<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m4 20 4.2-1 11.5-11.5a2 2 0 0 0-2.8-2.8L5.4 16.2 4 20Z"/><path d="m15.5 6.1 2.8 2.8"/></svg>';
     trigger.type = 'button';
     const dialog = document.createElement('dialog');
     dialog.className = 'copy-editor';
@@ -164,7 +272,7 @@
       status.textContent = message;
     }
 
-    trigger.addEventListener('click', () => {
+    mountPasscode(trigger, () => {
       applyEdits();
       search.value = '';
       status.textContent = '';
