@@ -1,9 +1,11 @@
 (() => {
-  const storageKey = 'teja-portfolio-copy-v1';
+  const storageKey = 'portfolio-copy-v1';
   const outputKey = 'terminal:output';
   let edits = {};
   try {
-    edits = parseEdits(localStorage.getItem(storageKey) || '{}');
+    const priorKey = Object.keys(localStorage).find((key) => key.endsWith('-' + storageKey));
+    const saved = localStorage.getItem(storageKey) ?? (priorKey ? localStorage.getItem(priorKey) : null);
+    edits = parseEdits(saved ?? '{}');
   } catch {
     // The portfolio remains usable when browser storage is unavailable.
   }
