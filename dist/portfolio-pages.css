@@ -52,3 +52,19 @@ main .crt-flicker > div:first-child > span:nth-child(2) {
 main .crt-flicker > div:first-child > span:nth-child(3) {
   background-color: #28c840;
 }
+
+/* Center each ASCII block as a unit, with a shared left edge for its rows. */
+main .crt-flicker .scanlines > pre:nth-of-type(-n + 2) {
+  width: max-content;
+  max-width: 100%;
+  text-align: left;
+  white-space: pre;
+  direction: ltr;
+  font-family: Menlo, Consolas, "Liberation Mono", monospace !important;
+  font-size: min(.85rem, 2.25vw) !important;
+  font-variant-ligatures: none;
+  font-kerning: none;
+  letter-spacing: 0;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
